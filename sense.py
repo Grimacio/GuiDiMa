@@ -5,6 +5,8 @@ sense.py
 """
 
 import sys
+
+from numpy import sqrt
 from scientisst import *
 from scientisst import __version__
 from threading import Timer
@@ -88,6 +90,16 @@ def main():
             if args.verbose:
                 header = "\t".join(get_header(args.channels, args.convert)) + "\n"
                 #sys.stdout.write(header)
+            res = np.zeros(50)
+            maxi_z = 1057.08
+            mini_z = 710.46
+            mini_x = 711.88
+            maxi_x = 1058.14
+            mini_y = 859.46
+            maxi_y = 899.44
+            maxi = 0
+            mini = 10000
+            itere = 0
             while not stop_event.is_set():
                 frames = scientisst.read(convert=args.convert, matrix=True)
                 if args.output:
@@ -98,8 +110,23 @@ def main():
                     script.put(frames)
                 #if args.verbose:
                     #sys.stdout.write("{}\n".format(frames[0]))
+                
                 for element in frames:
-                    print([element[0]]+[element[-1]])
+                    
+                    itere = itere +1
+                   
+                    #print([element[0]]+[element[-7]]+[element[-5]]+[element[-3]]+[element[-1]])
+                    aceler = sqrt(element[-5]**2+element[-3]**2+ element[-1]**2)
+                    res = np.append(res[1:],[element[-5]])
+                    if itere > 50:
+                        ave_mary = np.average(res)
+                        if ave_mary > maxi:
+                            maxi = ave_mary
+                            
+                        if ave_mary < mini:
+                            mini = ave_mary
+                        print(maxi , mini)
+                    #print([element[-7]]+[aceler])
         except KeyboardInterrupt:
             if args.duration and timer:
                 timer.cancel()
