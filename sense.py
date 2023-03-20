@@ -91,12 +91,12 @@ def main():
                 header = "\t".join(get_header(args.channels, args.convert)) + "\n"
                 #sys.stdout.write(header)
             res = np.zeros(50)
-            maxi_z = 1057.08
-            mini_z = 710.46
-            mini_x = 711.88
-            maxi_x = 1058.14
-            mini_y = 859.46
-            maxi_y = 899.44
+            maxi_z = 994.58
+            mini_z = 562.52
+            mini_y = 544.42
+            maxi_y = 976.14
+            mini_x = 539.4
+            maxi_x = 979.52
             maxi = 0
             mini = 10000
             itere = 0
@@ -116,8 +116,18 @@ def main():
                     itere = itere +1
                    
                     #print([element[0]]+[element[-7]]+[element[-5]]+[element[-3]]+[element[-1]])
-                    aceler = sqrt(element[-5]**2+element[-3]**2+ element[-1]**2)
-                    res = np.append(res[1:],[element[-5]])
+                    aceler = sqrt(element[-6]**2+element[-4]**2+ element[-2]**2)
+                    #res = np.append(res[1:],[element[-5]])
+                    #print(element)
+                    acc_x = (element[-4] - mini_x)/(maxi_x-mini_x)*2-1
+                    acc_y = (element[-2] - mini_y)/(maxi_y-mini_y)*2-1
+                    acc_z = (element[-6] - mini_z)/(maxi_z-mini_z)*2-1
+                    
+                    print(acc_x,' ',acc_y,' ',acc_z)
+                    
+                    
+                    '''
+                    res = np.append(res[1:],[element[-6]])
                     if itere > 50:
                         ave_mary = np.average(res)
                         if ave_mary > maxi:
@@ -125,8 +135,9 @@ def main():
                             
                         if ave_mary < mini:
                             mini = ave_mary
-                        print(maxi , mini)
-                    #print([element[-7]]+[aceler])
+                        #print(maxi , mini)
+                    #print(element[-1])
+                    #print([element[-7]]+[aceler])'''
         except KeyboardInterrupt:
             if args.duration and timer:
                 timer.cancel()
