@@ -119,9 +119,9 @@ def main():
                     
                     #res = np.append(res[1:],[element[-5]])
                     #print(element)
-                    acc_x = (element[-4] - mini_x)/(maxi_x-mini_x)*2-1
-                    acc_y = (element[-2] - mini_y)/(maxi_y-mini_y)*2-1
-                    acc_z = (element[-6] - mini_z)/(maxi_z-mini_z)*2-1
+                    acc_x = (element[-2] - mini_x)/(maxi_x-mini_x)*2-1
+                    acc_y = (element[-1] - mini_y)/(maxi_y-mini_y)*2-1
+                    acc_z = (element[-3] - mini_z)/(maxi_z-mini_z)*2-1
                     acc = sqrt(acc_x**2+acc_y**2+ acc_z**2)
                     print(acc)
                     
