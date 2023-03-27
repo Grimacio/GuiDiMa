@@ -5,17 +5,19 @@ sense.py
 """
 
 import sys
-
 from numpy import sqrt
 from scientisst import *
 from scientisst import __version__
-from threading import Timer
-from threading import Event
+from threading import Timer, Event, Thread
 from sense_src.arg_parser import ArgParser
 from sense_src.custom_script import get_custom_script, CustomScript
 from sense_src.device_picker import DevicePicker
 from sense_src.file_writer import *
+import csv
+import os
+from tkinter.filedialog import askdirectory
 
+saveToFile = True
 
 def run_scheduled_task(duration, stop_event):
     def stop(stop_event):
@@ -71,6 +73,20 @@ def main():
         if args.script:
             script = get_custom_script(args.script)
 
+        file   = 0
+        writer = 0
+        if saveToFile:
+            path= askdirectory(title= "Select Folder")
+            name=input("File name?: \n")
+            i=1
+            while os.path.exists(path+"/"+name+".csv"):
+                name=name+str(i)
+                i+=1
+            name+=".csv"
+            file    = open(path+"/"+name, "a", newline="")
+            csv.writer(file).writerow(["Sampling Frequency = %s" % str(args.fs)])
+            csv.writer(file).writerow(["Nsample","Timestamp(ms)", "EMGraw","AccXraw","AccYraw","AccZraw","ACCraw","dAccXraw","dAccYraw","dAccZraw","dACCraw", "AVEdAccZraw","MEDdAccZraw"])
+            writer=csv.writer(file)
         stop_event = Event()
 
         scientisst.start(args.fs, args.channels)
@@ -90,16 +106,16 @@ def main():
             if args.verbose:
                 header = "\t".join(get_header(args.channels, args.convert)) + "\n"
                 #sys.stdout.write(header)
-            res = np.zeros(50)
             maxi_z = 994.58
             mini_z = 562.52
             mini_y = 544.42
             maxi_y = 976.14
             mini_x = 539.4
             maxi_x = 979.52
-            maxi = 0
-            mini = 10000
-            itere = 0
+            itere  = 0
+            fs     = args.fs
+            buffer = np.zeros(3)
+            dbufferZ = np.zeros(3)
             while not stop_event.is_set():
                 frames = scientisst.read(convert=args.convert, matrix=True)
                 if args.output:
@@ -112,18 +128,31 @@ def main():
                     #sys.stdout.write("{}\n".format(frames[0]))
                 
                 for element in frames:
-                    
                     itere = itere +1
                    
                     #print([element[0]]+[element[-7]]+[element[-5]]+[element[-3]]+[element[-1]])
                     
                     #res = np.append(res[1:],[element[-5]])
                     #print(element)
-                    acc_x = (element[-2] - mini_x)/(maxi_x-mini_x)*2-1
-                    acc_y = (element[-1] - mini_y)/(maxi_y-mini_y)*2-1
-                    acc_z = (element[-3] - mini_z)/(maxi_z-mini_z)*2-1
-                    acc = sqrt(acc_x**2+acc_y**2+ acc_z**2)
-                    print(acc)
+                    timems = itere/fs*1000
+                    emgr   =  element[-4]
+                    accr_x = (element[-2] - mini_x)/(maxi_x-mini_x)*2-1
+                    accr_y = (element[-1] - mini_y)/(maxi_y-mini_y)*2-1
+                    accr_z = (element[-3] - mini_z)/(maxi_z-mini_z)*2-1
+                    accr = sqrt(accr_x**2+accr_y**2+ accr_z**2)
+                    daccr_x = accr_x-buffer[0]
+                    daccr_y = accr_y-buffer[1]
+                    daccr_z = accr_z-buffer[2]
+                    daccr = sqrt(daccr_x**2+daccr_y**2+ daccr_z**2)
+                    maccr_z = np.average(dbufferZ)
+                    if saveToFile:
+                            if (itere+1)%3 == 0:
+                                caccr_z = np.median(dbufferZ)
+                                writer.writerow([itere,timems, emgr,accr_x,accr_y,accr_z, accr, daccr_x, daccr_y, daccr_z, daccr, maccr_z, caccr_z])
+                            else:   
+                                writer.writerow([itere,timems, emgr,accr_x,accr_y,accr_z, accr, daccr_x, daccr_y, daccr_z, daccr, maccr_z])
+                    dbufferZ = [daccr_z,dbufferZ[0],dbufferZ[1]]
+                    buffer[:3]=[accr_x,accr_y,accr_z]
                     
                     
                     '''
