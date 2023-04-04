@@ -84,8 +84,8 @@ def main():
                 i+=1
             name+=".csv"
             file    = open(path+"/"+name, "a", newline="")
-            csv.writer(file).writerow(["Sampling Frequency = %s" % str(args.fs)])
-            csv.writer(file).writerow(["Nsample","Timestamp(ms)", "EMGraw","AccXraw","AccYraw","AccZraw","ACCraw","dAccXraw","dAccYraw","dAccZraw","dACCraw", "AVEdAccZraw","MEDdAccZraw"])
+            #csv.writer(file).writerow(["Sampling Frequency = %s" % str(args.fs)])
+            csv.writer(file).writerow(["Nsample","Timestamp(ms)", "EMGraw","AccXraw","AccYraw","AccZraw","ACCraw"])
             writer=csv.writer(file)
         stop_event = Event()
 
@@ -114,8 +114,6 @@ def main():
             maxi_x = 979.52
             itere  = 0
             fs     = args.fs
-            buffer = np.zeros(3)
-            dbufferZ = np.zeros(3)
             while not stop_event.is_set():
                 frames = scientisst.read(convert=args.convert, matrix=True)
                 if args.output:
@@ -140,20 +138,10 @@ def main():
                     accr_y = (element[-1] - mini_y)/(maxi_y-mini_y)*2-1
                     accr_z = (element[-3] - mini_z)/(maxi_z-mini_z)*2-1
                     accr = sqrt(accr_x**2+accr_y**2+ accr_z**2)
-                    daccr_x = accr_x-buffer[0]
-                    daccr_y = accr_y-buffer[1]
-                    daccr_z = accr_z-buffer[2]
-                    daccr = sqrt(daccr_x**2+daccr_y**2+ daccr_z**2)
-                    maccr_z = np.average(dbufferZ)
-                    if saveToFile:
-                            if (itere+1)%3 == 0:
-                                caccr_z = np.median(dbufferZ)
-                                writer.writerow([itere,timems, emgr,accr_x,accr_y,accr_z, accr, daccr_x, daccr_y, daccr_z, daccr, maccr_z, caccr_z])
-                            else:   
-                                writer.writerow([itere,timems, emgr,accr_x,accr_y,accr_z, accr, daccr_x, daccr_y, daccr_z, daccr, maccr_z])
-                    dbufferZ = [daccr_z,dbufferZ[0],dbufferZ[1]]
-                    buffer[:3]=[accr_x,accr_y,accr_z]
                     
+                    if saveToFile:
+                        writer.writerow([itere,timems, emgr,accr_x,accr_y,accr_z, accr])
+                            
                     
                     '''
                     res = np.append(res[1:],[element[-6]])
