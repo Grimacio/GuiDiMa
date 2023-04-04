@@ -85,7 +85,7 @@ def main():
             name+=".csv"
             file    = open(path+"/"+name, "a", newline="")
             #csv.writer(file).writerow(["Sampling Frequency = %s" % str(args.fs)])
-            csv.writer(file).writerow(["Nsample","Timestamp(ms)", "EMGraw","AccXraw","AccYraw","AccZraw","ACCraw"])
+            csv.writer(file).writerow(["Nsample","Timestamp (S)", "EMGraw","AccXraw","AccYraw","AccZraw","ACCraw","EMGma","AccXma","AccYma","AccZma","ACCma"])
             writer=csv.writer(file)
         stop_event = Event()
 
@@ -114,6 +114,8 @@ def main():
             maxi_x = 979.52
             itere  = 0
             fs     = args.fs
+            N      = 100    # Número de valores que vamos guardar de cada sensor
+            buffer = [np.zeros(N) , np.zeros(N) , np.zeros(N) , np.zeros(N)] #este vai guardar os últimos N valores medidos para fazermos a moving average
             while not stop_event.is_set():
                 frames = scientisst.read(convert=args.convert, matrix=True)
                 if args.output:
@@ -127,20 +129,23 @@ def main():
                 
                 for element in frames:
                     itere = itere +1
-                   
-                    #print([element[0]]+[element[-7]]+[element[-5]]+[element[-3]]+[element[-1]])
-                    
-                    #res = np.append(res[1:],[element[-5]])
-                    #print(element)
-                    timems = itere/fs*1000
+            
+                    timeS   =  itere/fs
                     emgr   =  element[-4]
                     accr_x = (element[-2] - mini_x)/(maxi_x-mini_x)*2-1
                     accr_y = (element[-1] - mini_y)/(maxi_y-mini_y)*2-1
                     accr_z = (element[-3] - mini_z)/(maxi_z-mini_z)*2-1
-                    accr = sqrt(accr_x**2+accr_y**2+ accr_z**2)
+                    accr = sqrt( accr_x**2 + accr_y**2 + accr_z**2)
+
+                    buffer[0]   =   np.append(buffer[0][1:],[emgr])
+                    buffer[1]   =   np.append(buffer[1][1:],[accr_x])
+                    buffer[2]   =   np.append(buffer[2][1:],[accr_y])
+                    buffer[3]   =   np.append(buffer[3][1:],[accr_z])
+
+
                     
                     if saveToFile:
-                        writer.writerow([itere,timems, emgr,accr_x,accr_y,accr_z, accr])
+                        writer.writerow([itere, timeS, emgr, accr_x, accr_y, accr_z, accr, np.average(buffer[0][-3:]),np.average(buffer[1][-50:]),np.average(buffer[2][-50:]),np.average(buffer[3][-50:])])
                             
                     
                     '''
