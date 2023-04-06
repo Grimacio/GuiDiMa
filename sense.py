@@ -85,7 +85,7 @@ def main():
             name+=".csv"
             file    = open(path+"/"+name, "a", newline="")
             #csv.writer(file).writerow(["Sampling Frequency = %s" % str(args.fs)])
-            csv.writer(file).writerow(["Nsample","Timestamp (S)", "EMGraw","AccXraw","AccYraw","AccZraw","ACCraw","EMGma","AccXma","AccYma","AccZma","ACCma"])
+            csv.writer(file).writerow(["Nsample","Timestamp", "EMGraw","AccXraw","AccYraw","AccZraw","ACCraw","EMGma","AccXma","AccYma","AccZma","ACCma"])
             writer=csv.writer(file)
         stop_event = Event()
 
