@@ -13,6 +13,7 @@ from sense_src.arg_parser import ArgParser
 from sense_src.custom_script import get_custom_script, CustomScript
 from sense_src.device_picker import DevicePicker
 from sense_src.file_writer import *
+from playsound import playsound
 import csv
 import os
 from tkinter.filedialog import askdirectory
@@ -87,9 +88,12 @@ def main():
             csv.writer(file).writerow(["Nsample","Timestamp", "EMGraw","AccXraw","AccYraw","AccZraw","ACCraw","EMGma","AccXma","AccYma","AccZma","ACCma"])
             writer=csv.writer(file)
         stop_event = Event()
+        
+        playsound('mkstart.mp3')
 
-        scientisst.start(args.fs, args.channels)
         sys.stdout.write("Start acquisition\n")
+        scientisst.start(args.fs, args.channels)
+        
 
         if args.output:
             file_writer.start()
