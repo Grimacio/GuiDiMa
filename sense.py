@@ -89,7 +89,7 @@ def main():
             writer=csv.writer(file)
         stop_event = Event()
         
-        playsound('mkstart.mp3')
+        playsound('mkstart.wav')
 
         sys.stdout.write("Start acquisition\n")
         scientisst.start(args.fs, args.channels)
