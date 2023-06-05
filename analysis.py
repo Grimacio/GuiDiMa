@@ -5,6 +5,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 
+def sliding_rms(values, window_size):
+    num_windows = len(values) - window_size + 1
+    shape = (num_windows, window_size)
+    strides = (values.itemsize, values.itemsize)
+    windows = np.lib.stride_tricks.as_strided(values, shape=shape, strides=strides)
+    squared_values = windows**2
+    rms_values = np.sqrt(np.mean(squared_values, axis=1))
+    return rms_values
+
+def rolling_rms(x, N):
+  return (pd.DataFrame(abs(x)**2).rolling(N).mean())**0.5
+
+
 folder_path = askdirectory(title = "Select Folder")  # Replace with the path to your folder
 
 # Get a list of all files in the folder
@@ -25,6 +38,7 @@ for file in excel_files:
     file_path = os.path.join(folder_path, file)  # Create the full file path
     df = pd.read_csv(file_path)  # Read the Excel file into a DataFrame
 
+
     temp_block=np.empty((0,5))
     current_class = ""
     for i in range(len(df)):
@@ -38,14 +52,35 @@ for file in excel_files:
                 Tensor[current_class] += [temp_block]
                 temp_block=np.empty((0,5))
         else:
-            mean = np.mean(temp_block[:,3])
-            hiv = np.std(temp_block[:,3])
-            rms = np.sqrt(np.mean(temp_block[:,3]**2))
-            
-            fft_result = np.abs(np.fft.fft(temp_block[:,3]))
-            freq = np.fft.fftfreq(len(temp_block[:,3]),1/1000)
+            if current_class not in ['L','K','P','PP']:
+                EMG_aux = temp_block[:,3]
+                if current_class not in ['K','P','PP']:
+                    window_size = 50
+                else:
+                    window_size = 350
+                
+                EMG_abs = abs(EMG_aux)
+                plt.subplot(1,2,1)
+                plt.plot(EMG_abs)
+                EMG_abs = rolling_rms(abs(EMG_aux), window_size)
+                plt.subplot(1,2,2)
+                plt.plot(EMG_abs)
+                plt.show()  
 
-            Features[current_class] += [[mean,hiv,rms,freq,fft_result]]
+                fft_result = np.abs(np.fft.fft(EMG_aux))
+                #freq = np.fft.fftfreq(len(EMG_aux),1/1000)
+
+                
+                
+
+
+                mean = np.mean(EMG_abs)
+                hiv = np.std(EMG_abs)
+                rms = np.sqrt(np.mean(EMG_abs**2))
+                
+                
+
+                #Features[current_class] += [[mean,hiv,rms,freq,fft_result]]
 
             if current_class not in Tensor:
                 Tensor[current_class] = [temp_block]
