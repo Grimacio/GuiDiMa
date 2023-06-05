@@ -24,22 +24,23 @@ if __name__ == "__main__":
     lowcut = 80.0
     highcut = 499
 
-    # Filter a noisy signal.
-    x =  pandas.read_csv(filedialog.askopenfilename())["ACCraw"]
-    nsamples = len(x)
-    t = np.arange(0, nsamples) / fs
-    y = butter_bandpass_filter(x, lowcut, highcut, fs, order=6)
+    while True:
+        # Filter a noisy signal.
+        x =  pandas.read_csv(filedialog.askopenfilename())["EMGraw"]
+        nsamples = len(x)
+        t = np.arange(0, nsamples) / fs
+        y = butter_bandpass_filter(x, lowcut, highcut, fs, order=6)
 
-    path= askdirectory(title= "Select Folder")
-    name=input("File name?: \n")
-    i=1
-    while os.path.exists(path+"/"+name+".csv"):
-        name=name+str(i)
-        i+=1
-    name+=".csv"
-    file    = open(path+"/"+name, "a", newline="")
-    csv.writer(file).writerow(["Nsample","Timestamp", "ACCraw", "EMGfilter"])
-    writer=csv.writer(file)
+        path= askdirectory(title= "Select Folder")
+        name=input("File name?: \n")
+        i=1
+        while os.path.exists(path+"/"+name+".csv"):
+            name=name+str(i)
+            i+=1
+        name+=".csv"
+        file    = open(path+"/"+name, "a", newline="")
+        csv.writer(file).writerow(["Nsample","Timestamp", "EMGraw", "EMGfilter"])
+        writer=csv.writer(file)
 
-    for index in range(len(x)):
-        writer.writerow([index, index/fs, x[index], y[index]])
+        for index in range(len(x)):
+            writer.writerow([index, index/fs, x[index], y[index]])
