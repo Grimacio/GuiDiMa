@@ -33,8 +33,9 @@ def moving_avg(signal, window_size):
 
 def three_point_peaks_detector(ecg_envelope):
     lev = np.zeros(len(ecg_envelope))
+    std_arr = np.zeros(len(ecg_envelope))
     peaks = []
-    window_size = 2000
+    window_size = 100
     max_bef = 0
 
     for i in range(len(ecg_envelope)):
@@ -44,6 +45,7 @@ def three_point_peaks_detector(ecg_envelope):
         ecg_window = ecg_envelope[start_index:end_index]
         max_instant = max(ecg_window)
         std_dev = np.std(ecg_window)
+        std_arr[i] = std_dev
         # Thresholding
         if std_dev >= 0.2 * max_instant:
             if max_instant < 2 * max_bef:
@@ -51,16 +53,16 @@ def three_point_peaks_detector(ecg_envelope):
             else:
                 lev[i] = 0.6 * max_bef
         else:
-            lev[i] = 3 * std_dev
+            lev[i] = 1 * std_dev
         max_bef = max_instant
 
     # Local Standard Deviation
 
     # QRS Wave's Peak Detector
-        if 1 < i < len(ecg_envelope)-2 and ecg_envelope[i-1] > lev[i-1] and ecg_envelope[i-1] > ecg_envelope[i-2] and ecg_envelope[i-1] > ecg_envelope[i]:
+        if 1 < i < len(ecg_envelope)-2 and ecg_envelope[i-1] > lev[i-1] and ecg_envelope[i-1] > ecg_envelope[i-2] and ecg_envelope[i-1] > ecg_envelope[i] and std_dev >= 3.5:
             peaks = peaks + [i]
 
-    return peaks, lev
+    return peaks, lev, std_arr
 
 
 name = filedialog.askopenfilename()
@@ -74,8 +76,8 @@ timestamp = data["Timestamp"].tolist()
 xi=range(len(timestamp))
 extracted_ecg = extract_ecg_from_emg(emg_raw)
 analytic_signal = hilbert(extracted_ecg)
-squared_envelope = moving_avg(np.abs(analytic_signal),40)
-peaks, lev = three_point_peaks_detector(squared_envelope)
+squared_envelope = np.abs(analytic_signal)
+peaks, lev, std_ar = three_point_peaks_detector(squared_envelope)
 
 """
 window_size = 15
@@ -93,6 +95,7 @@ plt.rcParams["figure.autolayout"] = True
 plt.plot(extracted_ecg, color="orange")
 plt.plot(squared_envelope, color="green")
 plt.plot(lev, color="black")
+plt.plot(std_ar, color="red")
 
 plt.plot(peaks, [squared_envelope[point] for point in peaks], 'ro', label='Peaks')
 plt.legend()
