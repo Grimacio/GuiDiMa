@@ -4,42 +4,11 @@ from matplotlib import pyplot as plt
 import numpy as np
 from scipy import signal
 from sklearn.decomposition import FastICA
+import biosppy.signals.ecg as ecg
+from scipy.signal import hilbert
 
-def generate_model_ecg(duration, sampling_rate):
-    # Generate time axis
-    t = np.arange(0, duration, 1 / sampling_rate)
-
-    # Generate ECG components
-    p_wave = signal.gaussian(int(duration * sampling_rate), std=int(duration * sampling_rate / 10))
-    qrs_complex = signal.gaussian(int(duration * sampling_rate), std=int(duration * sampling_rate / 20))
-    t_wave = signal.gaussian(int(duration * sampling_rate), std=int(duration * sampling_rate / 10))
-    
-    # Combine the components to create the ECG signal
-    ecg_signal = 0.1 * p_wave - 0.4 * qrs_complex + 0.2 * t_wave
-
-    return ecg_signal
-
-
-
-def perform_pattern_recognition(signalx):
-    sampling_rate = 1000  # Sampling rate in Hz
-    duration = len(signalx)/sampling_rate  # Duration of the ECG signal in seconds
-    
-    model_ecg_signal=generate_model_ecg(duration, sampling_rate)
-    # Normalize the model ECG signal
-    model_ecg_signal = (model_ecg_signal - np.mean(model_ecg_signal)) / np.std(model_ecg_signal)
-    
-    # Normalize the input signal
-    signalx = (signalx - np.mean(signalx)) / np.std(signalx)
-    
-    # Perform cross-correlation
-    correlation = np.correlate(signalx, model_ecg_signal, mode='same')
-    
-    # Find peaks in the correlation signal
-    peaks, _ = signal.find_peaks(correlation, height=0)
-    
-    return peaks
-
+import numpy as np
+from scipy.signal import butter, sosfilt
 
 def extract_ecg_from_emg(emg_ecg_signal):
     # Preprocessing: Bandpass filter the signal to isolate relevant frequencies
@@ -48,22 +17,50 @@ def extract_ecg_from_emg(emg_ecg_signal):
     f_high = 100.0  # Higher frequency cutoff
     b, a = signal.butter(4, [f_low, f_high], fs=fs, btype='bandpass')
     filtered_signal = signal.filtfilt(b, a, emg_ecg_signal)
-    
-    # Independent Component Analysis (ICA)
-    
-    
     # Reshape the signal into a 2D array (required by FastICA)
     X = filtered_signal.reshape(-1, 1)
-
-    
     # Perform ICA
     ica = FastICA(n_components=1)
     ecg_estimate = ica.fit_transform(X)
-    
     # Rescale the estimated ECG component to match the original scale
     ecg_estimate = np.squeeze(ecg_estimate) * np.ptp(emg_ecg_signal)
-    
     return ecg_estimate
+
+def moving_avg(signal, window_size):
+    kernel = np.ones(window_size) / window_size
+    smoothed_data = np.convolve(signal, kernel, mode='same')
+    return smoothed_data
+
+def three_point_peaks_detector(ecg_envelope):
+    lev = np.zeros(len(ecg_envelope))
+    peaks = []
+    window_size = 2000
+    max_bef = 0
+
+    for i in range(len(ecg_envelope)):
+    # Adaptive Thresholding
+        start_index = max(0, i - window_size//2)
+        end_index = min(len(ecg_envelope), i + window_size//2 + 1)
+        ecg_window = ecg_envelope[start_index:end_index]
+        max_instant = max(ecg_window)
+        std_dev = np.std(ecg_window)
+        # Thresholding
+        if std_dev >= 0.2 * max_instant:
+            if max_instant < 2 * max_bef:
+                lev[i] = 0.6 * max_instant
+            else:
+                lev[i] = 0.6 * max_bef
+        else:
+            lev[i] = 3 * std_dev
+        max_bef = max_instant
+
+    # Local Standard Deviation
+
+    # QRS Wave's Peak Detector
+        if 1 < i < len(ecg_envelope)-2 and ecg_envelope[i-1] > lev[i-1] and ecg_envelope[i-1] > ecg_envelope[i-2] and ecg_envelope[i-1] > ecg_envelope[i]:
+            peaks = peaks + [i]
+
+    return peaks, lev
 
 
 name = filedialog.askopenfilename()
@@ -76,27 +73,29 @@ timestamp = data["Timestamp"].tolist()
 
 xi=range(len(timestamp))
 extracted_ecg = extract_ecg_from_emg(emg_raw)
-
-
-plt.rcParams["figure.autolayout"] = True
-
-
-plt.plot(emg_filter, color="orange")
-plt.plot(extracted_ecg, color="black")
-plt.show()
-
+analytic_signal = hilbert(extracted_ecg)
+squared_envelope = moving_avg(np.abs(analytic_signal),40)
+peaks, lev = three_point_peaks_detector(squared_envelope)
 
 """
-# Example usage
-signalx = emg_raw  
+window_size = 15
+# Calcular a variância em relação aos vizinhos para cada ponto
+variancia_pontos = np.zeros(len(extracted_ecg))
+for i in range(len(extracted_ecg)):
+    start_index = max(0, i - window_size//2)
+    end_index = min(len(extracted_ecg), i + window_size//2 + 1)
+    variancia_pontos[i] = np.var(extracted_ecg[start_index:end_index])
+variancia_pontos = np.convolve(variancia_pontos,np.ones(15)/15) """
 
-peaks = perform_pattern_recognition(signalx)
-print(peaks)
-
-# Plot the original signal and identified peaks
 plt.figure()
-plt.plot(signalx, label='Signal')
-plt.plot(peaks, [signalx[point] for point in peaks], 'ro', label='Peaks')
+plt.rcParams["figure.autolayout"] = True
+
+plt.plot(extracted_ecg, color="orange")
+plt.plot(squared_envelope, color="green")
+plt.plot(lev, color="black")
+
+plt.plot(peaks, [squared_envelope[point] for point in peaks], 'ro', label='Peaks')
 plt.legend()
-plt.show()"""
+
+plt.show()
 
