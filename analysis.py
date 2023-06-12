@@ -28,7 +28,6 @@ file_list = os.listdir(folder_path)
 
 # Filter the list to only include CSV files
 excel_files = [file for file in file_list if file.endswith('.csv')]
-
 Tensor = {}
 Features = {}
 blocks = ["A","B","D","N","P","PP","K","L"]
@@ -59,7 +58,7 @@ for file in excel_files:
 
         else:
 
-            if current_class not in ['L','K','P','PP']:
+            if current_class != "L":
                 EMG_aux = temp_block[:,3]
 
                 if current_class not in ['K','P','PP']:
@@ -76,8 +75,12 @@ for file in excel_files:
                 plt.plot(EMG_abs)
                 plt.show() """
 
-                fft_result = np.abs(np.fft.fft(EMG_aux))
-                #freq = np.fft.fftfreq(len(EMG_aux),1/1000)
+                power_spectrum = (np.abs(np.fft.fft(EMG_aux))**2 / len(EMG_aux))
+                freq = np.fft.fftfreq(len(EMG_aux),1/1000)
+                power_spectrum = abs(savgol_filter(power_spectrum[:round(len(freq)/2)], 20, 2))
+                power_spectrum = power_spectrum/np.sum(power_spectrum)
+                
+                
 
                 mean = np.mean(EMG_abs)
                 stdev = np.std(EMG_abs)
@@ -85,7 +88,7 @@ for file in excel_files:
                 
                 
 
-                #Features[current_class] += [[mean,stdev,rms,freq,fft_result]]
+                Features[current_class] += [[mean,stdev,rms,freq, power_spectrum]]
 
             if current_class not in Tensor:
                 Tensor[current_class] = [temp_block]
@@ -97,12 +100,38 @@ for file in excel_files:
             current_class = str(df.loc[i, 'Class'])
 
 
-print("oi cheguei aqui")
-#Results     
-print(Features["K"][0][4])
-print(Features["K"][0][3])
-smoothed_data = savgol_filter(Features["K"][0][4][:round(len(Features["K"][0][3])/2)], 20, 2)
-plt.plot(Features["K"][0][3][:round(len(Features["K"][0][3])/2)],smoothed_data)
+#Results   
+
+
+power_spec = Features["K"][0][4]
+
+freq_cut=Features["K"][0][3][:round(len(Features["K"][0][3])/2)]
+plt.plot(freq_cut,power_spec)
+plt.show()
+
+percent = 0.30
+cumulative_sum = np.cumsum(power_spec)
+plt.plot(cumulative_sum)
+
+plt.show()
+mean_frequency = np.average(freq_cut, weights=power_spec)
+median_index = np.searchsorted(cumulative_sum, 0.5)
+
+
+#print("Mean Frequency: ",mean_frequency, "\n Median Frequency: ", freq_cut[median_index])
+
+
+lower_bound= np.searchsorted(cumulative_sum,0.5-percent/2)
+higher_bound= np.searchsorted(cumulative_sum,0.5+percent/2)
+
+
+
+peak = freq_cut[np.argmax(power_spec)]
+interval=[freq_cut[lower_bound], freq_cut[higher_bound]]
+print(peak,"\n", interval)
+
+plt.plot(freq_cut,power_spec)
 plt.show()        
-        
-        
+
+# Calculate the mean frequency
+
