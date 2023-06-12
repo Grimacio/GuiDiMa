@@ -60,10 +60,44 @@ def three_point_peaks_detector(ecg_envelope):
 
     # QRS Wave's Peak Detector
         if 1 < i < len(ecg_envelope)-2 and ecg_envelope[i-1] > lev[i-1] and ecg_envelope[i-1] > ecg_envelope[i-2] and ecg_envelope[i-1] > ecg_envelope[i] and std_dev >= 3.5:
-            peaks = peaks + [i]
+            peaks = peaks + [i-1]
 
     return peaks, lev, std_arr
 
+def filter_ecg(estimate, peaks, lev):
+    found = False
+    lev_found = False
+    threshold = [8, 30]
+    filtered_ecg = []
+    aux = []
+    for i in range(len(estimate)-1):
+        if len(peaks) != 0 and (i+1) == peaks[0]:
+            found = True
+            peaks = peaks[1:]
+        if lev[i+1] > threshold[1] or lev[i+1] < threshold[0]:
+            if lev_found:
+                lev_found = False
+                aux += [estimate[i]]
+                if found:
+                    found = False
+                    filtered_ecg += aux   
+                else:
+                    filtered_ecg += [0 * v for v in aux]
+                aux = []
+            else:
+                aux += [0]
+        else:
+            if not lev_found:
+                lev_found = True
+                aux += [0]
+                filtered_ecg += aux
+                aux = []
+                if found:
+                    found = False
+            else:
+                aux += [estimate[i]]
+
+    return filtered_ecg
 
 name = filedialog.askopenfilename()
 
@@ -78,6 +112,7 @@ extracted_ecg = extract_ecg_from_emg(emg_raw)
 analytic_signal = hilbert(extracted_ecg)
 squared_envelope = np.abs(analytic_signal)
 peaks, lev, std_ar = three_point_peaks_detector(squared_envelope)
+final_ecg = filter_ecg(extracted_ecg,peaks,lev)
 
 """
 window_size = 15
@@ -92,13 +127,13 @@ variancia_pontos = np.convolve(variancia_pontos,np.ones(15)/15) """
 plt.figure()
 plt.rcParams["figure.autolayout"] = True
 
-plt.plot(extracted_ecg, color="orange")
-plt.plot(squared_envelope, color="green")
-plt.plot(lev, color="black")
-plt.plot(std_ar, color="red")
+plt.plot(emg_raw, color="orange")
+plt.plot(final_ecg, color="green")
+#plt.plot(lev, color="black")
+#plt.plot(std_ar, color="red")
 
-plt.plot(peaks, [squared_envelope[point] for point in peaks], 'ro', label='Peaks')
-plt.legend()
+#plt.plot(peaks, [squared_envelope[point] for point in peaks], 'ro', label='Peaks')
+#plt.legend()
 
 plt.show()
 

@@ -69,12 +69,12 @@ for file in excel_files:
                     window_size = 350
                 
                 EMG_abs = abs(EMG_aux)
-                plt.subplot(1,2,1)
-                plt.plot(EMG_abs)
+                #plt.subplot(1,2,1)
+                #plt.plot(EMG_abs)
                 EMG_abs = rolling_rms(abs(EMG_aux), window_size)
-                plt.subplot(1,2,2)
+                """ plt.subplot(1,2,2)
                 plt.plot(EMG_abs)
-                plt.show()  
+                plt.show() """
 
                 fft_result = np.abs(np.fft.fft(EMG_aux))
                 #freq = np.fft.fftfreq(len(EMG_aux),1/1000)
@@ -97,6 +97,7 @@ for file in excel_files:
             current_class = str(df.loc[i, 'Class'])
 
 
+print("oi cheguei aqui")
 #Results     
 print(Features["K"][0][4])
 print(Features["K"][0][3])
