@@ -26,11 +26,13 @@ folder_path = askdirectory(title = "Select Folder")  # Replace with the path to 
 # Get a list of all files in the folder
 file_list = os.listdir(folder_path)
 
+
+
 # Filter the list to only include CSV files
 excel_files = [file for file in file_list if file.endswith('.csv')]
 Tensor = {}
 Features = {}
-blocks = ["A","B","D","N","P","PP","K","L"]
+blocks = ["A","B","D","N","P","PP","K", "L"]
 for a in blocks:
     Tensor[a] = []
     Features[a] = []
@@ -68,27 +70,32 @@ for file in excel_files:
                     window_size = 350
                 
                 EMG_abs = abs(EMG_aux)
-                #plt.subplot(1,2,1)
-                #plt.plot(EMG_abs)
                 EMG_abs = rolling_rms(abs(EMG_aux), window_size)
-                """ plt.subplot(1,2,2)
-                plt.plot(EMG_abs)
-                plt.show() """
+
+                mean = np.mean(EMG_abs)
+                stdev = (str(np.std(EMG_abs)).split(" ")[4]).split('/')[0]
+                rms = np.sqrt(np.mean(EMG_abs**2))
 
                 power_spectrum = (np.abs(np.fft.fft(EMG_aux))**2 / len(EMG_aux))
                 freq = np.fft.fftfreq(len(EMG_aux),1/1000)
+                freq_cut=freq[:round(len(freq)/2)]
                 power_spectrum = abs(savgol_filter(power_spectrum[:round(len(freq)/2)], 20, 2))
+
+                power_integral = sum(power_spectrum*(freq[1]-freq[0]))
+
                 power_spectrum = power_spectrum/np.sum(power_spectrum)
-                
-                
+                cumulative_sum = np.cumsum(power_spectrum)
 
-                mean = np.mean(EMG_abs)
-                stdev = np.std(EMG_abs)
-                rms = np.sqrt(np.mean(EMG_abs**2))
-                
-                
+                mean_frequency = np.average(freq_cut, weights=power_spectrum)
+                median_index = np.searchsorted(cumulative_sum, 0.5)
+                peak = freq_cut[np.argmax(power_spectrum)]
 
-                Features[current_class] += [[mean,stdev,rms,freq, power_spectrum]]
+                percent = 0.30
+                lower_bound= np.searchsorted(cumulative_sum,0.5-percent/2)
+                higher_bound= np.searchsorted(cumulative_sum,0.5+percent/2)
+                interval=[freq_cut[lower_bound], freq_cut[higher_bound]]
+
+                Features[current_class] += [[mean, stdev ,rms, power_integral, interval, peak, mean_frequency, freq_cut[median_index]]]
 
             if current_class not in Tensor:
                 Tensor[current_class] = [temp_block]
@@ -100,38 +107,15 @@ for file in excel_files:
             current_class = str(df.loc[i, 'Class'])
 
 
-#Results   
+data=[[]]
+for key, value in Features.items(): 
+    
+    if len(value)!=0:
 
+        for j in value:
+            data += [[str(key)]+j]
 
-power_spec = Features["K"][0][4]
+dataframe = pd.DataFrame(data, columns=["Class", "mean",  "stdev", "rms", "integralP", "Fint", "Fmax", "Fmean", "Fmedian"])
+dataframe.to_excel("example1.xlsx", index=False)
 
-freq_cut=Features["K"][0][3][:round(len(Features["K"][0][3])/2)]
-plt.plot(freq_cut,power_spec)
-plt.show()
-
-percent = 0.30
-cumulative_sum = np.cumsum(power_spec)
-plt.plot(cumulative_sum)
-
-plt.show()
-mean_frequency = np.average(freq_cut, weights=power_spec)
-median_index = np.searchsorted(cumulative_sum, 0.5)
-
-
-#print("Mean Frequency: ",mean_frequency, "\n Median Frequency: ", freq_cut[median_index])
-
-
-lower_bound= np.searchsorted(cumulative_sum,0.5-percent/2)
-higher_bound= np.searchsorted(cumulative_sum,0.5+percent/2)
-
-
-
-peak = freq_cut[np.argmax(power_spec)]
-interval=[freq_cut[lower_bound], freq_cut[higher_bound]]
-print(peak,"\n", interval)
-
-plt.plot(freq_cut,power_spec)
-plt.show()        
-
-# Calculate the mean frequency
 
