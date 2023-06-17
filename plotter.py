@@ -6,7 +6,7 @@ name = filedialog.askopenfilename()
 
 data = pandas.read_csv(name)
 
-emg_raw = data["EMGfilter"].tolist()
+emg_raw = data["EMGraw"].tolist()
 #acc_raw = data["ACCraw"].tolist()
 timestamp = data["Timestamp"].tolist()
 
