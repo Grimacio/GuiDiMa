@@ -24,21 +24,27 @@ if __name__ == "__main__":
     lowcut = 10
     highcut = 499
 
-    while True:
+    folder_path = askdirectory(title = "Pasta Raw")
+    file_list = os.listdir(folder_path)
+    excel_files = [file for file in file_list if file.endswith('.csv')]
+    
+
+    path= askdirectory(title = "Pasta Filtrados")
+    for file in excel_files:
         # Filter a noisy signal.
-        x =  pandas.read_csv(filedialog.askopenfilename())["EMGraw"]
+        x =  pandas.read_csv(folder_path+"/"+file)["EMGraw"]
         nsamples = len(x)
         t = np.arange(0, nsamples) / fs
         y = butter_bandpass_filter(x, lowcut, highcut, fs, order=6)
 
-        path= askdirectory(title= "Select Folder")
-        name=input("File name?: \n")
+        #path= askdirectory(title= "Select Folder")
+        name = file.replace(".csv", "")+"_filt"
         i=1
         while os.path.exists(path+"/"+name+".csv"):
             name=name+str(i)
             i+=1
         name+=".csv"
-        file    = open(path+"/"+name, "a", newline="")
+        file  = open(path+"/"+name, "a", newline="")
         csv.writer(file).writerow(["Nsample","Timestamp", "EMGraw", "EMGfilter"])
         writer=csv.writer(file)
 
