@@ -13,6 +13,12 @@ def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
     y = lfilter(b, a, data)
     return y
 
+def notch_filter(data, cutoff, q_factor, fs):
+    # Normalize cutoff frequency and compute angular frequency
+    norm_cutoff = cutoff / (0.5 * fs) 
+    b, a = butter(2, [norm_cutoff - 1/(2*q_factor), norm_cutoff + 1/(2*q_factor)], btype='bandstop')
+    filtered_data = lfilter(b, a, data)
+    return filtered_data
 
 if __name__ == "__main__":
     import numpy as np
@@ -23,6 +29,7 @@ if __name__ == "__main__":
     fs = 1000
     lowcut = 10
     highcut = 499
+    cutoff=50
 
     folder_path = askdirectory(title = "Pasta Raw")
     file_list = os.listdir(folder_path)
@@ -36,7 +43,7 @@ if __name__ == "__main__":
         nsamples = len(x)
         t = np.arange(0, nsamples) / fs
         y = butter_bandpass_filter(x, lowcut, highcut, fs, order=6)
-
+        y = notch_filter(y, cutoff, 10, fs)
         #path= askdirectory(title= "Select Folder")
         name = file.replace(".csv", "")+"_filt"
         i=1

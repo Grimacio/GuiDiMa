@@ -4,7 +4,6 @@ from matplotlib import pyplot as plt
 import numpy as np
 from scipy import signal
 from sklearn.decomposition import FastICA
-import biosppy.signals.ecg as ecg
 from scipy.signal import hilbert
 
 import numpy as np
@@ -127,8 +126,8 @@ variancia_pontos = np.convolve(variancia_pontos,np.ones(15)/15) """
 plt.figure()
 plt.rcParams["figure.autolayout"] = True
 
-plt.plot(emg_raw, color="orange")
-plt.plot(final_ecg, color="green")
+plt.plot(emg_filter, color="orange")
+#plt.plot(final_ecg, color="green")
 #plt.plot(lev, color="black")
 #plt.plot(std_ar, color="red")
 

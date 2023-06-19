@@ -70,10 +70,12 @@ for file in excel_files:
                     window_size = 350
                 
                 EMG_abs = abs(EMG_aux)
+                dimension= len(EMG_abs)
                 EMG_abs = rolling_rms(abs(EMG_aux), window_size)
 
                 mean = np.mean(EMG_abs)
-                stdev = (str(np.std(EMG_abs)).split(" ")[4]).split('/')[0]
+                #stdev = (str(np.std(EMG_abs)).split(" ")[4]).split('/')[0]
+                stdev = np.std(EMG_aux)
                 rms = np.sqrt(np.mean(EMG_abs**2))
 
                 power_spectrum = (np.abs(np.fft.fft(EMG_aux))**2 / len(EMG_aux))
@@ -94,8 +96,8 @@ for file in excel_files:
                 lower_bound= np.searchsorted(cumulative_sum,0.5-percent/2)
                 higher_bound= np.searchsorted(cumulative_sum,0.5+percent/2)
                 interval=[freq_cut[lower_bound], freq_cut[higher_bound]]
-
-                Features[current_class] += [[mean, stdev ,rms, power_integral, interval, peak, mean_frequency, freq_cut[median_index]]]
+                print(float(stdev))
+                Features[current_class] += [[dimension, mean, float(stdev) ,rms, power_integral, interval, peak, mean_frequency, freq_cut[median_index]]]
 
             if current_class not in Tensor:
                 Tensor[current_class] = [temp_block]
@@ -115,7 +117,7 @@ for key, value in Features.items():
         for j in value:
             data += [[str(key)]+j]
 
-dataframe = pd.DataFrame(data, columns=["Class", "mean",  "stdev", "rms", "integralP", "Fint", "Fmax", "Fmean", "Fmedian"])
-dataframe.to_excel("example1.xlsx", index=False)
+dataframe = pd.DataFrame(data, columns=["Class", "Dimension", "mean",  "stdev", "rms", "integralP", "Fint", "Fmax", "Fmean", "Fmedian"])
+dataframe.to_excel("Doente.xlsx", index=False)
 
 
